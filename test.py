@@ -1,33 +1,31 @@
-from bluepy.btle import Scanner, DefaultDelegate, Peripheral
-import struct
+from BleReader import BleReader
+from InfluxClient import InfluxClient
 
-class MyDelegate(DefaultDelegate):
-    def __init__(self):
-        DefaultDelegate.__init__(self)
-        print("init delegate called")
 
-    def handleNotification(self, cHandle, data):
-        print("notification cHandle={}; data={}".format(cHandle, data))
 
-p = Peripheral( "fa:2d:c9:45:90:8e" )
-p.withDelegate( MyDelegate() )
 
-# Setup to turn notifications on, e.g.
-services=p.getServices()
-svc = p.getServiceByUUID("691263ec-5983-4034-8eea-399c82e7fa7a")
-ch = svc.getCharacteristics("54fd1583-b8ca-4153-a72f-92d846b041bc")[0]
-ch.write(bytes("0", 'utf-8'))
+influx = InfluxClient(
+            url="http://192.168.1.23:9999", 
+            token="DDHT0emN0wa00JZSxgo3b5ji_pbAbmnjVZj_F5py1UhJYam63KaRr68oU_1vopla1H62vVNiA86kh7i3ln1Spg==")
 
-# Main loop --------
+reader = BleReader(
+            peripheralAddress="fa:2d:c9:45:90:8e", 
+            serviceUUID="691263ec-5983-4034-8eea-399c82e7fa7a", 
+            charUUID="54fd1583-b8ca-4153-a72f-92d846b041bc")
 
-while True:
-    data = ch.read()
-    data2 = struct.unpack("f", data)
-    print("{:.2f}".format(data2[0]))
-    # Perhaps do something else here
+obs = reader.connect()
+obs.subscribe(
+    on_next= lambda i: print("data={}".format(i)),
+    on_error= lambda e: print("Error occured: {}".format(e)),
+    on_completed= lambda: print("Done")
+)
 
-# peripheral = Peripheral("fa:2d:c9:45:90:8e")
-# print("mac: {}, addr_type: {}, iface: {}".format(peripheral.addr, peripheral.addrType, peripheral.iface))
-# services = peripheral.getServices()
-# peripheral.disconnect()
-# print("Done")
+reader.start()
+
+
+
+
+
+
+# # peripheral.disconnect()
+# # print("Done")
